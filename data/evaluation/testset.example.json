@@ -1,0 +1,39 @@
+{
+  "_format": {
+    "query": "The plain-English question an engineer would ask (required).",
+    "relevant": "Optional list of ground-truth chunk_ids for retrieval metrics (precision/recall/NDCG). Fill these in after the index is built by inspecting which chunks truly answer the query.",
+    "expected_facts": "Optional list of substrings/keywords a correct answer MUST contain. Drives fact_coverage. Keep them short and verbatim from the source where possible.",
+    "must_cite": "Optional list of document names the answer should cite. Drives must_cite_recall.",
+    "out_of_scope": "Optional bool. If true, the CORRECT behavior is to abstain ('not in the docs'). Drives the resilience metric."
+  },
+  "queries": [
+    {
+      "query": "How do I switch databases on the TTC?",
+      "relevant": [],
+      "expected_facts": [],
+      "must_cite": ["HOW_TO_SWITCH_DATABASES_ON_TTC"],
+      "out_of_scope": false
+    },
+    {
+      "query": "What are the steps to set up RSA SecurID?",
+      "relevant": [],
+      "expected_facts": [],
+      "must_cite": ["RSA_SecurID_Setup"],
+      "out_of_scope": false
+    },
+    {
+      "query": "How do I add a user to the Sybase database as a DBA?",
+      "relevant": [],
+      "expected_facts": [],
+      "must_cite": ["HOW_TO_add_user_to_Sybase_database_as_DBA"],
+      "out_of_scope": false
+    },
+    {
+      "query": "What is the recommended brand of coffee for the break room?",
+      "relevant": [],
+      "expected_facts": [],
+      "must_cite": [],
+      "out_of_scope": true
+    }
+  ]
+}

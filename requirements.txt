@@ -1,0 +1,21 @@
+# docsearch dependencies
+# Versions pinned for reproducibility.
+
+# Document extraction
+pypdf==6.10.2
+pdfminer.six==20231228
+python-docx==1.2.0
+
+# Embeddings + vector / keyword search
+sentence-transformers==5.4.1
+faiss-cpu==1.9.0.post1
+numpy==1.26.4
+rank_bm25==0.2.2
+
+# Web server
+Flask==3.1.3
+
+# Optional: LLM answer generation. Pick whichever you need.
+# ollama==0.4.8           # local models via Ollama
+# openai==1.82.0          # OpenAI, Azure, vLLM, LiteLLM, ...
+# anthropic==0.86.0       # Anthropic (Claude)

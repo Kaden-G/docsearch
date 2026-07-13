@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocSearch — Document Search</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg: #f5f2ed;
+            --surface: #ffffff;
+            --surface-alt: #faf8f5;
+            --border: #e8e2d9;
+            --border-focus: #b5855a;
+            --primary: #b5855a;
+            --primary-hover: #9a6d44;
+            --primary-light: #f3ece3;
+            --accent: #6b9e6b;
+            --accent-light: #e9f3e9;
+            --text: #2d2a26;
+            --text-muted: #7a746b;
+            --text-light: #a39e95;
+            --danger: #c0503e;
+            --danger-light: #fceae7;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+            --shadow: 0 4px 20px rgba(0,0,0,.06);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,.08);
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            --mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── NAV BAR ─────────────────────────────────── */
+        .navbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .nav-brand svg { width: 32px; height: 32px; }
+
+        .nav-brand span {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -.02em;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 99px;
+            font-size: .8rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .nav-pill.stats {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .nav-pill.settings-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .nav-pill.settings-btn:hover { background: var(--surface-alt); }
+
+        .nav-pill svg { width: 16px; height: 16px; }
+
+        /* ── MAIN LAYOUT ─────────────────────────────── */
+        .main { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+
+        /* ── HERO / SEARCH ───────────────────────────── */
+        .hero {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .hero h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: -.02em;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: .95rem;
+        }
+
+        .search-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: .95rem;
+            font-family: var(--font);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            outline: none;
+            transition: border .15s, box-shadow .15s;
+            background: var(--surface-alt);
+        }
+
+        .search-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(181,133,90,.12);
+            background: var(--surface);
+        }
+
+        .search-input::placeholder { color: var(--text-light); }
+
+        .btn {
+            padding: 12px 28px;
+            font-size: .95rem;
+            font-weight: 600;
+            font-family: var(--font);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all .15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+        .filter-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .filter-group select {
+            padding: 6px 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            font-size: .82rem;
+            font-family: var(--font);
+            outline: none;
+            background: var(--surface-alt);
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle {
+            position: relative;
+            width: 36px;
+            height: 20px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--border);
+            border-radius: 20px;
+            outline: none;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        .toggle:checked { background: var(--accent); }
+
+        .toggle::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform .2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,.15);
+        }
+
+        .toggle:checked::before { transform: translateX(16px); }
+
+        /* ── RESULTS ─────────────────────────────────── */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .results-header h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .results-count {
+            font-size: .82rem;
+            color: var(--text-muted);
+        }
+
+        .answer-box {
+            background: var(--accent-light);
+            border: 1px solid #b8d8b8;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .answer-box-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            color: #3d7a3d;
+            margin-bottom: 10px;
+            font-size: .9rem;
+        }
+
+        .answer-box-title svg { width: 18px; height: 18px; }
+
+        .answer-text {
+            line-height: 1.7;
+        }
+
+        .answer-text h1, .answer-text h2, .answer-text h3 {
+            margin: 16px 0 8px;
+            color: var(--text);
+        }
+
+        .answer-text h2 { font-size: 1.05rem; }
+        .answer-text h3 { font-size: .95rem; }
+
+        .answer-text p { margin: 6px 0; }
+
+        .answer-text ul, .answer-text ol {
+            margin: 6px 0 6px 20px;
+            padding: 0;
+        }
+
+        .answer-text li { margin: 4px 0; }
+
+        .answer-text code {
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: .85em;
+        }
+
+        .answer-text pre {
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            overflow-x: auto;
+            font-size: .85em;
+        }
+
+        .answer-text pre code {
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .answer-text blockquote {
+            border-left: 3px solid var(--primary);
+            margin: 8px 0;
+            padding: 6px 12px;
+            background: var(--primary-light);
+            border-radius: 0 6px 6px 0;
+            font-size: .9em;
+        }
+
+        .answer-text strong { color: var(--text); }
+
+        .fn-ref a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: .75em;
+            cursor: pointer;
+        }
+
+        .fn-ref a:hover { text-decoration: underline; }
+
+        .fn-section {
+            margin-top: 20px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            font-size: .82rem;
+            color: var(--text-muted);
+        }
+
+        .fn-section strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-light);
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .fn-section ol {
+            margin: 0;
+            padding-left: 24px;
+        }
+
+        .fn-section li {
+            margin: 3px 0;
+            line-height: 1.5;
+        }
+
+        .answer-text-legacy {
+            font-size: .92rem;
+            line-height: 1.7;
+            color: var(--text);
+            white-space: pre-wrap;
+        }
+
+        /* ── AGENTIC v2 UI ───────────────────────────── */
+        .v2-tag {
+            font-size: .6rem;
+            font-weight: 700;
+            letter-spacing: .03em;
+            background: var(--primary);
+            color: #fff;
+            padding: 1px 5px;
+            border-radius: 4px;
+            margin-left: 2px;
+        }
+
+        .answer-box-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .confidence-badge {
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+        .confidence-badge.high   { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .confidence-badge.medium { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+        .confidence-badge.low    { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        .trace-panel {
+            margin-top: 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .trace-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--surface-alt);
+            cursor: pointer;
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            user-select: none;
+        }
+        .trace-header:hover { background: var(--accent-light); }
+        .trace-summary { margin-left: auto; font-weight: 500; font-size: .72rem; }
+        .trace-chevron { width: 14px; height: 14px; transition: transform .15s; }
+        .trace-body { display: none; padding: 4px 12px 8px; }
+        .trace-panel.open .trace-body { display: block; }
+        .trace-panel.open .trace-chevron { transform: rotate(180deg); }
+        .trace-stage {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            padding: 6px 0;
+            border-bottom: 1px dashed var(--border);
+            font-size: .78rem;
+        }
+        .trace-stage:last-child { border-bottom: none; }
+        .trace-stage-name {
+            font-weight: 600;
+            text-transform: capitalize;
+            min-width: 80px;
+            color: var(--text);
+        }
+        .trace-stage-stat { color: var(--text-muted); font-size: .72rem; white-space: nowrap; }
+        .trace-stage-detail { color: var(--text-muted); font-size: .72rem; }
+
+        .feedback-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+        }
+
+        .feedback-row span {
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .stars { display: flex; gap: 2px; }
+
+        .stars button {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: var(--border);
+            transition: color .15s;
+            padding: 0 2px;
+            line-height: 1;
+        }
+
+        .stars button:hover,
+        .stars button.on { color: #e8a735; }
+
+        .feedback-msg {
+            font-size: .8rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .result-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-bottom: 12px;
+            transition: box-shadow .15s, border-color .15s;
+        }
+
+        .result-card:hover {
+            box-shadow: var(--shadow);
+            border-color: #d5cfc6;
+        }
+
+        .result-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .result-doc {
+            font-weight: 700;
+            font-size: .95rem;
+            color: var(--text);
+        }
+
+        .result-score {
+            font-size: .75rem;
+            font-weight: 700;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 3px 10px;
+            border-radius: 99px;
+        }
+
+        .result-meta {
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .result-section-tag {
+            display: inline-block;
+            font-size: .75rem;
+            font-weight: 600;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 2px 10px;
+            border-radius: 99px;
+            margin-bottom: 10px;
+        }
+
+        .result-text {
+            font-size: .88rem;
+            line-height: 1.65;
+            color: #4a4640;
+        }
+
+        .result-text mark {
+            background: #fde9a9;
+            color: inherit;
+            padding: 1px 2px;
+            border-radius: 3px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: .35;
+        }
+
+        .empty-state p { font-size: .95rem; }
+        .empty-state .sub { font-size: .82rem; margin-top: 6px; }
+
+        .loading-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-box {
+            background: var(--danger-light);
+            color: var(--danger);
+            padding: 14px 18px;
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--danger);
+            margin-bottom: 16px;
+            font-size: .9rem;
+        }
+
+        /* ── SETTINGS DRAWER ─────────────────────────── */
+        .drawer-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.25);
+            z-index: 200;
+            animation: fadeIn .15s;
+        }
+
+        .drawer-overlay.open { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 400px;
+            max-width: 90vw;
+            height: 100vh;
+            background: var(--surface);
+            z-index: 201;
+            box-shadow: -8px 0 40px rgba(0,0,0,.1);
+            transition: right .25s cubic-bezier(.4,0,.2,1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .drawer.open { right: 0; }
+
+        .drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .drawer-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .drawer-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 4px;
+            border-radius: 6px;
+            transition: background .15s;
+        }
+
+        .drawer-close:hover { background: var(--surface-alt); }
+        .drawer-close svg { width: 20px; height: 20px; }
+
+        .drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .settings-section {
+            margin-bottom: 28px;
+        }
+
+        .settings-section h4 {
+            font-size: .78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-row:last-child { border-bottom: none; }
+
+        .setting-label {
+            font-size: .88rem;
+            font-weight: 600;
+        }
+
+        .setting-desc {
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: .88rem;
+            font-family: var(--mono);
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            outline: none;
+            background: var(--surface-alt);
+            margin-top: 6px;
+            transition: border .15s;
+        }
+
+        .setting-input:focus {
+            border-color: var(--border-focus);
+        }
+
+        .setting-input-group { margin-bottom: 14px; }
+
+        .setting-input-group label {
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--text);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .setting-input-group .hint {
+            font-size: .75rem;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        .save-bar {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-save {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* ── POUCH (DROP ZONE) ────────────────────────── */
+        .library-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .library-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background .1s;
+        }
+
+        .library-toggle:hover { background: var(--surface-alt); }
+
+        .library-toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: .9rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .library-toggle-left svg { width: 18px; height: 18px; color: var(--primary); }
+
+        .library-badge {
+            font-size: .72rem;
+            font-weight: 700;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 2px 9px;
+            border-radius: 99px;
+        }
+
+        .library-chevron {
+            width: 18px;
+            height: 18px;
+            color: var(--text-light);
+            transition: transform .2s;
+        }
+
+        .library-card.open .library-chevron { transform: rotate(180deg); }
+
+        .library-body {
+            display: none;
+            padding: 0 20px 20px;
+        }
+
+        .library-card.open .library-body { display: block; }
+
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-sm);
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .15s, background .15s;
+            margin-bottom: 16px;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .drop-zone svg {
+            width: 36px;
+            height: 36px;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .drop-zone.dragover svg { color: var(--primary); }
+
+        .drop-zone p {
+            font-size: .88rem;
+            color: var(--text-muted);
+        }
+
+        .drop-zone .browse-link {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .drop-zone .formats {
+            font-size: .75rem;
+            color: var(--text-light);
+            margin-top: 6px;
+        }
+
+        .library-files { list-style: none; }
+
+        .library-file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 12px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            transition: background .1s;
+        }
+
+        .library-file:hover { background: var(--surface-alt); }
+
+        .library-file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .library-file-ext {
+            font-size: .65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 2px 7px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .library-file-name {
+            font-size: .85rem;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .library-file-size {
+            font-size: .75rem;
+            color: var(--text-light);
+            flex-shrink: 0;
+        }
+
+        .library-file-del {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 4px;
+            border-radius: 4px;
+            transition: color .15s, background .15s;
+            flex-shrink: 0;
+            display: flex;
+        }
+
+        .library-file-del:hover {
+            color: var(--danger);
+            background: var(--danger-light);
+        }
+
+        .library-file-del svg { width: 14px; height: 14px; }
+
+        .library-empty {
+            text-align: center;
+            padding: 12px;
+            font-size: .82rem;
+            color: var(--text-light);
+        }
+
+        .library-upload-progress {
+            font-size: .82rem;
+            color: var(--primary);
+            font-weight: 600;
+            padding: 8px 0;
+        }
+
+        .build-progress {
+            font-size: .82rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .build-progress.error {
+            color: var(--danger);
+        }
+
+        .build-progress.done {
+            color: var(--accent);
+        }
+
+        .build-bar {
+            display: none;
+            margin-top: 12px;
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .build-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 999px;
+            transition: width .35s ease;
+        }
+
+        .build-bar-fill.done {
+            background: var(--accent);
+        }
+
+        .build-bar-fill.error {
+            background: var(--danger);
+        }
+
+        /* ── RESPONSIVE ──────────────────────────────── */
+        @media (max-width: 640px) {
+            .search-row { flex-direction: column; }
+            .filter-row { flex-direction: column; align-items: flex-start; }
+            .navbar { padding: 0 14px; }
+            .main { padding: 20px 14px 60px; }
+            .hero h1 { font-size: 1.3rem; }
+            .drawer { width: 100vw; max-width: 100vw; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ─────────────────────────────────────────── -->
+<nav class="navbar">
+    <a class="nav-brand" href="/">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#b5855a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <span>DocSearch</span>
+    </a>
+    <div class="nav-actions">
+        <div class="nav-pill stats" id="navStats">Loading...</div>
+        <div class="nav-pill stats" id="llmPill" style="display:none" title="LLM provider status"></div>
+        <button class="nav-pill settings-btn" onclick="toggleSettings()" title="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+        </button>
+    </div>
+</nav>
+
+<!-- ── MAIN CONTENT ───────────────────────────────────── -->
+<div class="main">
+    <div class="hero">
+        <h1>What can DocSearch find for you?</h1>
+        <p>Search your document library with plain-English questions</p>
+    </div>
+
+    <div class="search-card">
+        <form class="search-row" id="searchForm">
+            <input
+                class="search-input"
+                type="text"
+                id="searchInput"
+                placeholder="e.g. &quot;How do I initialize the cooling system?&quot;"
+                autocomplete="off"
+                required
+            >
+            <button type="submit" class="btn btn-primary" id="searchButton">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Search
+            </button>
+        </form>
+
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="documentFilter">Library:</label>
+                <select id="documentFilter">
+                    <option value="">All Documents</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="resultCount">Results:</label>
+                <select id="resultCount">
+                    <option value="5" selected>5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+
+            <label class="toggle-label" for="generateAnswer">
+                <input class="toggle" type="checkbox" id="generateAnswer">
+                AI Answer
+            </label>
+
+            <label class="toggle-label" for="agenticMode" title="Use the 5-agent pipeline: plan &rarr; retrieve &rarr; assemble &rarr; answer &rarr; verify">
+                <input class="toggle" type="checkbox" id="agenticMode">
+                Agentic <span class="v2-tag">v2</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- ── LIBRARY ────────────────────────────────────── -->
+    <div class="library-card" id="libraryCard">
+        <div class="library-toggle" onclick="toggleLibrary()">
+            <div class="library-toggle-left">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                Library
+                <span class="library-badge" id="libraryBadge">0 files</span>
+            </div>
+            <svg class="library-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="library-body">
+            <div class="drop-zone" id="dropZone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p>Drag &amp; drop files here, or <span class="browse-link" onclick="document.getElementById('fileInput').click()">browse</span></p>
+                <p class="formats">Accepts .pdf, .docx, .txt</p>
+                <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt" style="display:none" onchange="handleFileSelect(this.files)">
+            </div>
+            <div id="libraryStatus"></div>
+            <ul class="library-files" id="libraryFileList"></ul>
+            <div style="margin-top:16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <button class="btn btn-primary" id="buildBtn" onclick="startBuild('standard')" style="padding:10px 22px; font-size:.85rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    Build Index
+                </button>
+                <button class="btn btn-primary" id="smartBtn" onclick="startBuild('smart')" style="padding:10px 22px; font-size:.85rem;" title="Enhanced one-time build: adds summaries, synthetic questions, and contextual embeddings so search is faster and more accurate. Best when documents don't change often.">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10z"/></svg>
+                    Smart Indexing
+                </button>
+                <span class="build-progress" id="buildProgress"></span>
+            </div>
+            <div class="build-bar" id="buildBar"><div class="build-bar-fill" id="buildBarFill"></div></div>
+        </div>
+    </div>
+
+    <!-- results area -->
+    <div id="answerContainer"></div>
+
+    <div class="results-header" id="resultsHeader" style="display:none;">
+        <h2>Search Results</h2>
+        <span class="results-count" id="resultsCount"></span>
+    </div>
+
+    <div id="resultsContainer">
+        <div class="empty-state">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#b5855a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="28" cy="28" r="18" opacity=".35"/>
+                <line x1="41" y1="41" x2="54" y2="54" opacity=".35"/>
+            </svg>
+            <p>Ask a question about your documents</p>
+            <p class="sub">Upload files to the library, build the index, then search</p>
+        </div>
+    </div>
+    <div id="feedbackContainer"></div>
+</div>
+
+<!-- ── SETTINGS DRAWER ────────────────────────────────── -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="toggleSettings()"></div>
+<div class="drawer" id="settingsDrawer">
+    <div class="drawer-header">
+        <h3>Settings</h3>
+        <button class="drawer-close" onclick="toggleSettings()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
+    <div class="drawer-body">
+
+        <div class="settings-section">
+            <h4>Search</h4>
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">Re-ranking</div>
+                    <div class="setting-desc">Cross-encoder re-ranks for better top results</div>
+                </div>
+                <input class="toggle" type="checkbox" id="settingRerank" checked>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h4>AI Answer Generation</h4>
+            <div class="setting-input-group">
+                <label>LLM Provider</label>
+                <select class="setting-input" id="settingProvider" style="font-family:var(--font);" onchange="onProviderChange()">
+                    <option value="">None (search only)</option>
+                    <option value="ollama">Ollama (local — fully offline)</option>
+                    <option value="openai">OpenAI / compatible API</option>
+                    <option value="anthropic">Anthropic (Claude)</option>
+                </select>
+            </div>
+
+            <div id="apiSettings" style="display:none;">
+                <div id="dataNoticeExternal" style="background:var(--danger-light); color:var(--danger); font-size:.78rem; padding:10px 12px; border-radius:6px; margin-bottom:14px; line-height:1.5;">
+                    <strong>Data notice:</strong> When AI Answer is enabled with an external API, your query and the top matching document chunks are sent to the API provider.
+                </div>
+
+                <div class="setting-input-group">
+                    <label>API Key</label>
+                    <input class="setting-input" type="password" id="settingApiKey" placeholder="sk-...">
+                    <div class="hint">Sent to your local DocSearch server only, never stored on disk</div>
+                </div>
+
+                <div class="setting-input-group" id="apiBaseGroup">
+                    <label>API Base URL</label>
+                    <input class="setting-input" type="url" id="settingApiBase" placeholder="https://api.openai.com/v1">
+                    <div class="hint">Change for Azure, vLLM, LiteLLM, etc.</div>
+                </div>
+
+                <div class="setting-input-group">
+                    <label>Model</label>
+                    <select class="setting-input" id="settingModel" style="font-family:var(--font);"></select>
+                </div>
+            </div>
+
+            <div class="setting-input-group" id="ollamaModelGroup">
+                <label>Ollama Model</label>
+                <input class="setting-input" type="text" id="settingOllamaModel" value="llama3.1:8b" placeholder="llama3.1:8b">
+                <div class="hint">Type any model name installed in Ollama</div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h4>About DocSearch</h4>
+            <p style="font-size:.82rem; color:var(--text-muted); line-height:1.6;">
+                DocSearch is a semantic search tool for documents.
+                Embedding, indexing, and search all run 100% locally.
+            </p>
+            <p style="font-size:.82rem; color:var(--text-muted); line-height:1.6; margin-top:6px;">
+                <strong>Ollama:</strong> Everything stays on your machine.<br>
+                <strong>External API:</strong> Query + top chunks are sent to the provider when AI Answer is on.
+            </p>
+        </div>
+    </div>
+    <div class="save-bar">
+        <button class="btn btn-primary btn-save" onclick="saveSettings()">Save Settings</button>
+    </div>
+</div>
+
+<script>
+    // ── STATE ────────────────────────────────────────
+    let currentQueryId = null;
+
+    // ── SETTINGS PERSISTENCE (localStorage) ─────────
+    function loadSettings() {
+        const s = JSON.parse(localStorage.getItem('docsearch_settings') || '{}');
+        if (s.provider) document.getElementById('settingProvider').value = s.provider;
+        onProviderChange(); // Build model dropdown for the selected provider
+        if (s.apiKey) document.getElementById('settingApiKey').value = s.apiKey;
+        if (s.apiBase) document.getElementById('settingApiBase').value = s.apiBase;
+        if (s.model) document.getElementById('settingModel').value = s.model;
+        if (s.ollamaModel) document.getElementById('settingOllamaModel').value = s.ollamaModel;
+        if (s.rerank !== undefined) document.getElementById('settingRerank').checked = s.rerank;
+    }
+
+    async function saveSettings() {
+        const s = {
+            provider: document.getElementById('settingProvider').value,
+            apiKey: document.getElementById('settingApiKey').value,
+            apiBase: document.getElementById('settingApiBase').value,
+            model: document.getElementById('settingModel').value,
+            ollamaModel: document.getElementById('settingOllamaModel').value,
+            rerank: document.getElementById('settingRerank').checked
+        };
+        localStorage.setItem('docsearch_settings', JSON.stringify(s));
+
+        // Push LLM config to the server
+        try {
+            const r = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(s)
+            });
+            const d = await r.json();
+            if (d.error) {
+                alert('Settings saved locally. Server: ' + d.error);
+            }
+        } catch { /* server may not be ready */ }
+
+        loadLlmStatus();
+        toggleSettings();
+    }
+
+    function getSettings() {
+        return JSON.parse(localStorage.getItem('docsearch_settings') || '{}');
+    }
+
+    const MODEL_OPTIONS = {
+        openai: [
+            { value: 'gpt-oss-120b', label: 'GPT-OSS 120B' },
+        ],
+        anthropic: [
+            { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+            { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+            { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku (fast)' },
+            { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+        ],
+        openai: [
+            { value: 'gpt-4o-mini', label: 'GPT-4o Mini (fast)' },
+            { value: 'gpt-4o', label: 'GPT-4o' },
+            { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+            { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+        ]
+    };
+
+    function onProviderChange() {
+        const prov = document.getElementById('settingProvider').value;
+        const needsApi = prov === 'openai' || prov === 'anthropic';
+        document.getElementById('apiSettings').style.display = needsApi ? 'block' : 'none';
+        document.getElementById('ollamaModelGroup').style.display = prov === 'ollama' ? 'block' : 'none';
+
+        // Anthropic uses a fixed base URL; OpenAI-compatible providers let you override it.
+        document.getElementById('apiBaseGroup').style.display = prov === 'openai' ? 'block' : 'none';
+
+        // External-data notice shown for any remote API.
+        document.getElementById('dataNoticeExternal').style.display = needsApi ? 'block' : 'none';
+
+        // Populate model dropdown
+        const select = document.getElementById('settingModel');
+        const models = MODEL_OPTIONS[prov] || [];
+        select.innerHTML = models.map(m =>
+            `<option value="${m.value}">${m.label}</option>`
+        ).join('');
+
+        // Key placeholder
+        const keyInput = document.getElementById('settingApiKey');
+        const baseInput = document.getElementById('settingApiBase');
+        if (prov === 'anthropic') {
+            keyInput.placeholder = 'sk-ant-...';
+        } else {
+            keyInput.placeholder = 'sk-...';
+            baseInput.placeholder = 'https://api.openai.com/v1';
+        }
+    }
+
+    // ── SETTINGS DRAWER ─────────────────────────────
+    function toggleSettings() {
+        document.getElementById('drawerOverlay').classList.toggle('open');
+        document.getElementById('settingsDrawer').classList.toggle('open');
+    }
+
+    // ── LLM STATUS ──────────────────────────────────
+    async function loadLlmStatus() {
+        const pill = document.getElementById('llmPill');
+        try {
+            const r = await fetch('/api/settings');
+            const d = await r.json();
+            if (d.provider && d.provider !== 'none') {
+                const labels = { ollama: 'Ollama', openai: 'internal', anthropic: 'Claude', openai: 'OpenAI' };
+                const label = labels[d.provider] || d.provider;
+                const model = d.model ? ` (${d.model})` : '';
+                pill.textContent = `LLM: ${label}${model}`;
+                pill.style.display = 'flex';
+                const isLocal = d.provider === 'ollama' || d.provider === 'openai';
+                pill.style.background = isLocal ? 'var(--accent-light)' : 'var(--primary-light)';
+                pill.style.color = isLocal ? 'var(--accent)' : 'var(--primary)';
+            } else {
+                pill.textContent = 'LLM: Off';
+                pill.style.display = 'flex';
+                pill.style.background = 'var(--surface-alt)';
+                pill.style.color = 'var(--text-light)';
+            }
+        } catch {
+            pill.style.display = 'none';
+        }
+    }
+
+    // ── STATS ───────────────────────────────────────
+    async function loadStats() {
+        try {
+            const r = await fetch('/api/stats');
+            const d = await r.json();
+            document.getElementById('navStats').innerHTML =
+                `<strong>${d.total_documents}</strong>&nbsp;docs&nbsp;&nbsp;|&nbsp;&nbsp;<strong>${d.total_chunks}</strong>&nbsp;chunks`;
+
+            const select = document.getElementById('documentFilter');
+            d.documents.forEach(doc => {
+                const o = document.createElement('option');
+                o.value = doc;
+                o.textContent = doc;
+                select.appendChild(o);
+            });
+        } catch {
+            document.getElementById('navStats').textContent = 'Offline';
+        }
+    }
+
+    // ── SEARCH ──────────────────────────────────────
+    async function performSearch(event) {
+        event.preventDefault();
+
+        const query = document.getElementById('searchInput').value.trim();
+        const topK = parseInt(document.getElementById('resultCount').value);
+        const docFilter = document.getElementById('documentFilter').value;
+        const agenticMode = document.getElementById('agenticMode').checked;
+        const generateAnswer = document.getElementById('generateAnswer').checked || agenticMode;
+        const container = document.getElementById('resultsContainer');
+        const answerBox = document.getElementById('answerContainer');
+        const feedbackBox = document.getElementById('feedbackContainer');
+        const header = document.getElementById('resultsHeader');
+        const btn = document.getElementById('searchButton');
+
+        if (!query) return;
+
+        // Collapse library so results are front-and-center
+        document.getElementById('libraryCard').classList.remove('open');
+
+        btn.disabled = true;
+        answerBox.innerHTML = '';
+        feedbackBox.innerHTML = '';
+        header.style.display = 'none';
+        currentQueryId = null;
+
+        const msg = agenticMode
+            ? 'Running agentic pipeline: plan \u2192 retrieve \u2192 assemble \u2192 answer \u2192 verify...'
+            : generateAnswer ? 'Searching and generating answer...' : 'Searching your documents...';
+        container.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>${msg}</p></div>`;
+
+        try {
+            const resp = await fetch('/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query,
+                    top_k: topK,
+                    document: docFilter || null,
+                    generate_answer: generateAnswer,
+                    pipeline: agenticMode ? 'agentic' : 'traditional'
+                })
+            });
+
+            const data = await resp.json();
+
+            if (data.error) {
+                container.innerHTML = `<div class="error-box">${escapeHtml(data.error)}</div>`;
+                return;
+            }
+
+            if (data.query_id) currentQueryId = data.query_id;
+
+            if (data.results.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No results found for "${escapeHtml(query)}"</p>
+                        <p class="sub">Try rephrasing your question or broadening your search</p>
+                    </div>`;
+                return;
+            }
+
+            // Answer
+            if (data.answer) {
+                const conf = (data.confidence && data.confidence !== 'n/a')
+                    ? `<span class="confidence-badge ${escapeHtml(data.confidence)}">${escapeHtml(data.confidence)} confidence</span>`
+                    : '';
+                const tag = data.pipeline === 'agentic' ? ' <span class="v2-tag">v2</span>' : '';
+                answerBox.innerHTML = `
+                    <div class="answer-box">
+                        <div class="answer-box-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                            DocSearch's Answer${tag}
+                            <div class="answer-box-meta">${conf}</div>
+                        </div>
+                        <div class="answer-text">${renderAnswer(data.answer)}</div>
+                        ${data.trace ? renderTrace(data.trace) : ''}
+                    </div>`;
+            }
+
+            // Feedback
+            if (currentQueryId) {
+                feedbackBox.innerHTML = `
+                    <div class="feedback-row">
+                        <span>Rate these results:</span>
+                        <div class="stars" id="starRating">
+                            ${[1,2,3,4,5].map(n => `<button onclick="submitRating(${n})" data-r="${n}">&#9733;</button>`).join('')}
+                        </div>
+                        <span class="feedback-msg" id="feedbackMsg"></span>
+                    </div>`;
+            }
+
+            // Results
+            header.style.display = 'flex';
+            document.getElementById('resultsCount').textContent = `${data.results.length} result${data.results.length !== 1 ? 's' : ''}`;
+
+            container.innerHTML = data.results.map(r => {
+                const pct = (r.similarity * 100).toFixed(1);
+                return `
+                    <div class="result-card">
+                        <div class="result-card-head">
+                            <div class="result-doc">${escapeHtml(r.doc_name)}</div>
+                            <div class="result-score">${pct}%</div>
+                        </div>
+                        <div class="result-meta">Page ${r.page} &middot; Result #${r.rank}</div>
+                        <div class="result-section-tag">${escapeHtml(r.section)}</div>
+                        <div class="result-text">${highlightText(r.text, query)}</div>
+                    </div>`;
+            }).join('');
+
+        } catch (err) {
+            container.innerHTML = `<div class="error-box">Search failed: ${escapeHtml(err.message)}</div>`;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // ── MARKDOWN RENDERING ────────────────────────────
+    function renderAnswer(text) {
+        // Pre-process footnotes before marked parses the markdown
+        // Extract footnote definitions: [^N]: text
+        const footnoteDefs = {};
+        let body = text.replace(/^\[\^(\d+)\]:\s*(.+)$/gm, (_, id, content) => {
+            footnoteDefs[id] = content.trim();
+            return ''; // Remove from body
+        });
+
+        // Parse remaining markdown
+        let html;
+        if (typeof marked !== 'undefined') {
+            try { html = marked.parse(body); } catch { html = null; }
+        }
+        if (!html) html = escapeHtml(body).replace(/\n/g, '<br>');
+
+        // Replace inline [^N] markers with superscript links
+        html = html.replace(/\[\^(\d+)\]/g, (_, id) =>
+            `<sup class="fn-ref"><a href="#fn-${id}" title="${escapeHtml(footnoteDefs[id] || '')}">${id}</a></sup>`
+        );
+
+        // Append footnotes section if any exist
+        const ids = Object.keys(footnoteDefs).sort((a, b) => a - b);
+        if (ids.length > 0) {
+            html += '<div class="fn-section"><strong>References</strong><ol>';
+            ids.forEach(id => {
+                html += `<li id="fn-${id}" value="${id}">${escapeHtml(footnoteDefs[id])}</li>`;
+            });
+            html += '</ol></div>';
+        }
+
+        return html;
+    }
+
+    // ── AGENT TRACE (v2) ──────────────────────────────
+    function renderTrace(trace) {
+        if (!trace || !trace.stages || !trace.stages.length) return '';
+        const stages = trace.stages.map(s => {
+            const d = s.detail || {};
+            let detail = '';
+            if (d.num_sub_queries !== undefined)
+                detail = `${d.num_sub_queries} sub-quer${d.num_sub_queries === 1 ? 'y' : 'ies'}`;
+            else if (d.total_passes !== undefined)
+                detail = `${d.total_passes} pass${d.total_passes === 1 ? '' : 'es'}, ${d.unique_chunks} chunks`;
+            else if (d.chunks_in_context !== undefined)
+                detail = `${d.chunks_in_context} chunks${d.xref_chunks_added ? `, +${d.xref_chunks_added} via x-ref` : ''}`;
+            else if (d.num_claims !== undefined)
+                detail = `${d.supported}/${d.num_claims} claims supported${d.removed ? `, ${d.removed} removed` : ''}`;
+            else if (d.num_citations !== undefined)
+                detail = `${d.num_citations} citation${d.num_citations === 1 ? '' : 's'}`;
+            const calls = `${s.llm_calls} call${s.llm_calls === 1 ? '' : 's'}`;
+            return `
+                <div class="trace-stage">
+                    <span class="trace-stage-name">${escapeHtml(s.name)}</span>
+                    <span class="trace-stage-stat">${Math.round(s.latency_ms)}ms &middot; ${calls} &middot; ${s.total_tokens} tok</span>
+                    <span class="trace-stage-detail">${escapeHtml(detail)}</span>
+                </div>`;
+        }).join('');
+        const summary = `${Math.round(trace.total_latency_ms)}ms &middot; ${trace.total_llm_calls} LLM calls &middot; ${trace.total_tokens} tokens`;
+        return `
+            <div class="trace-panel" id="tracePanel">
+                <div class="trace-header" onclick="this.parentElement.classList.toggle('open')">
+                    <svg class="trace-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    Agent thinking
+                    <span class="trace-summary">${summary}</span>
+                </div>
+                <div class="trace-body">${stages}</div>
+            </div>`;
+    }
+
+    // ── FEEDBACK ────────────────────────────────────
+    async function submitRating(rating) {
+        if (!currentQueryId) return;
+        document.querySelectorAll('#starRating button').forEach(b => {
+            b.classList.toggle('on', parseInt(b.dataset.r) <= rating);
+        });
+        try {
+            await fetch('/api/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query_id: currentQueryId, rating })
+            });
+            document.getElementById('feedbackMsg').textContent = 'Thanks for the feedback!';
+        } catch {
+            document.getElementById('feedbackMsg').textContent = 'Could not save';
+        }
+    }
+
+    // ── UTILITIES ───────────────────────────────────
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    function highlightText(text, query) {
+        let escaped = escapeHtml(text);
+        query.toLowerCase().split(' ').filter(w => w.length > 3).forEach(word => {
+            const safe = escapeHtml(word).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            escaped = escaped.replace(new RegExp(`(${safe})`, 'gi'), '<mark>$1</mark>');
+        });
+        return escaped;
+    }
+
+    // ── POUCH ───────────────────────────────────────
+    function toggleLibrary() {
+        document.getElementById('libraryCard').classList.toggle('open');
+        // Load files when first opened
+        if (document.getElementById('libraryCard').classList.contains('open')) {
+            loadLibraryFiles();
+        }
+    }
+
+    async function loadLibraryFiles() {
+        try {
+            const r = await fetch('/api/library');
+            const d = await r.json();
+            renderLibraryFiles(d.files || []);
+        } catch {
+            document.getElementById('libraryFileList').innerHTML =
+                '<div class="library-empty">Could not load library contents</div>';
+        }
+    }
+
+    function renderLibraryFiles(files) {
+        const badge = document.getElementById('libraryBadge');
+        badge.textContent = `${files.length} file${files.length !== 1 ? 's' : ''}`;
+
+        const list = document.getElementById('libraryFileList');
+        if (files.length === 0) {
+            list.innerHTML = '<div class="library-empty">Library is empty — drop some documents in!</div>';
+            return;
+        }
+
+        list.innerHTML = files.map(f => `
+            <li class="library-file">
+                <div class="library-file-info">
+                    <span class="library-file-ext">${escapeHtml(f.ext.replace('.',''))}</span>
+                    <span class="library-file-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="library-file-size">${formatSize(f.size)}</span>
+                    <button class="library-file-del" title="Remove from library" onclick="deleteLibraryFile('${escapeHtml(f.name)}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+            </li>
+        `).join('');
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    async function handleFileSelect(files) {
+        if (!files || files.length === 0) return;
+        await uploadFiles(files);
+        document.getElementById('fileInput').value = '';
+    }
+
+    async function uploadFiles(files) {
+        const status = document.getElementById('libraryStatus');
+        status.innerHTML = '<div class="library-upload-progress">Uploading...</div>';
+
+        const formData = new FormData();
+        for (const f of files) {
+            formData.append('files', f);
+        }
+
+        try {
+            const r = await fetch('/api/library', { method: 'POST', body: formData });
+            const d = await r.json();
+
+            let msg = d.message || 'Done';
+            if (d.skipped && d.skipped.length > 0) {
+                msg += ' | Skipped: ' + d.skipped.map(s => s.name + ' (' + s.reason + ')').join(', ');
+            }
+            status.innerHTML = `<div class="library-upload-progress">${escapeHtml(msg)}</div>`;
+            setTimeout(() => { status.innerHTML = ''; }, 4000);
+
+            await loadLibraryFiles();
+        } catch (err) {
+            status.innerHTML = `<div class="error-box">Upload failed: ${escapeHtml(err.message)}</div>`;
+        }
+    }
+
+    async function deleteLibraryFile(name) {
+        if (!confirm(`Remove "${name}" from the input directory?`)) return;
+        try {
+            await fetch(`/api/library/${encodeURIComponent(name)}`, { method: 'DELETE' });
+            await loadLibraryFiles();
+        } catch (err) {
+            alert('Could not remove file: ' + err.message);
+        }
+    }
+
+    // ── BUILD INDEX ─────────────────────────────────
+    async function startBuild(mode) {
+        mode = mode || 'standard';
+        const btn = document.getElementById('buildBtn');
+        const smartBtn = document.getElementById('smartBtn');
+        const prog = document.getElementById('buildProgress');
+        const bar = document.getElementById('buildBar');
+        const fill = document.getElementById('buildBarFill');
+
+        btn.disabled = true;
+        if (smartBtn) smartBtn.disabled = true;
+        prog.className = 'build-progress';
+        prog.textContent = mode === 'smart' ? 'Starting Smart Indexing...' : 'Starting build...';
+        bar.style.display = 'block';
+        fill.className = 'build-bar-fill';
+        fill.style.width = '0%';
+
+        try {
+            const r = await fetch('/api/library/build', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode })
+            });
+            const d = await r.json();
+            if (d.error) {
+                prog.className = 'build-progress error';
+                prog.textContent = d.error;
+                btn.disabled = false;
+                if (smartBtn) smartBtn.disabled = false;
+                return;
+            }
+            pollBuild();
+        } catch (err) {
+            prog.className = 'build-progress error';
+            prog.textContent = 'Failed to start build: ' + err.message;
+            btn.disabled = false;
+            if (smartBtn) smartBtn.disabled = false;
+        }
+    }
+
+    function pollBuild() {
+        const btn = document.getElementById('buildBtn');
+        const smartBtn = document.getElementById('smartBtn');
+        const prog = document.getElementById('buildProgress');
+        const fill = document.getElementById('buildBarFill');
+
+        const interval = setInterval(async () => {
+            try {
+                const r = await fetch('/api/library/build/status');
+                const d = await r.json();
+
+                prog.className = 'build-progress';
+                prog.textContent = d.step || 'Working...';
+                if (typeof d.percent === 'number') {
+                    fill.style.width = Math.max(0, Math.min(100, d.percent)) + '%';
+                }
+
+                if (d.done) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    if (smartBtn) smartBtn.disabled = false;
+
+                    if (d.error) {
+                        prog.className = 'build-progress error';
+                        prog.textContent = 'Build failed: ' + d.error + ' — try removing some files and retry.';
+                        fill.className = 'build-bar-fill error';
+                    } else {
+                        prog.className = 'build-progress done';
+                        prog.textContent = 'Index built — ready to search!';
+                        fill.className = 'build-bar-fill done';
+                        fill.style.width = '100%';
+                        loadStats();
+                        // Push saved settings to the newly initialized searcher
+                        const saved = getSettings();
+                        if (saved.provider) {
+                            fetch('/api/settings', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(saved)
+                            }).then(() => loadLlmStatus()).catch(() => {});
+                        } else {
+                            loadLlmStatus();
+                        }
+                    }
+                    return;
+                }
+
+                if (!d.running && !d.done) {
+                    btn.disabled = false;
+                    if (smartBtn) smartBtn.disabled = false;
+                    clearInterval(interval);
+                }
+            } catch {
+                // Keep polling
+            }
+        }, 1500);
+    }
+
+    // Drag-and-drop setup
+    function setupDropZone() {
+        const zone = document.getElementById('dropZone');
+        ['dragenter','dragover'].forEach(e => {
+            zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.add('dragover'); });
+        });
+        ['dragleave','drop'].forEach(e => {
+            zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.remove('dragover'); });
+        });
+        zone.addEventListener('drop', ev => {
+            const files = ev.dataTransfer.files;
+            if (files.length) uploadFiles(files);
+        });
+    }
+
+    // ── INIT ────────────────────────────────────────
+    document.getElementById('searchForm').addEventListener('submit', performSearch);
+    loadStats();
+    loadSettings();
+    loadLlmStatus();
+    setupDropZone();
+    // Pre-load library file count
+    fetch('/api/library').then(r=>r.json()).then(d=>{
+        document.getElementById('libraryBadge').textContent =
+            `${(d.files||[]).length} file${(d.files||[]).length!==1?'s':''}`;
+    }).catch(()=>{});
+</script>
+</body>
+</html>

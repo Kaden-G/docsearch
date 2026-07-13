@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Data directories (don't commit documents or indices)
+data/raw/*.pdf
+data/raw/*.docx
+data/raw/*.txt
+data/processed/*.json
+data/index/*
+data/metrics/
+
+# Keep directory structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/index/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# Logs
+*.log
+
+# Model cache
+models/
+.cache/
+
+# Flask
+instance/
+.pytest_cache/
