@@ -122,7 +122,7 @@ only.
 ```bash
 export DOCSEARCH_LLM_PROVIDER=anthropic
 export DOCSEARCH_API_KEY=sk-ant-...
-export DOCSEARCH_LLM_MODEL=claude-sonnet-4-20250514
+export DOCSEARCH_LLM_MODEL=claude-haiku-4-5-20251001
 ```
 
 When AI Answer is on, the query and the top matching chunks are sent to

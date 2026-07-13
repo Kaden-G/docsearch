@@ -108,7 +108,7 @@ class DocSearcher:
                 self.llm_provider = ''
             else:
                 self._anthropic_client = _anthropic_mod.Anthropic(api_key=self._api_key)
-                self._llm_model = self._llm_model or 'claude-sonnet-4-20250514'
+                self._llm_model = self._llm_model or 'claude-haiku-4-5-20251001'
                 print(f"Anthropic LLM enabled (model: {self._llm_model})")
         elif self.llm_provider == 'openai' and self._api_key:
             if not OPENAI_AVAILABLE:
@@ -169,7 +169,7 @@ class DocSearcher:
                 return
             self.llm_provider = 'anthropic'
             self._api_key = api_key
-            self._llm_model = model or 'claude-sonnet-4-20250514'
+            self._llm_model = model or 'claude-haiku-4-5-20251001'
             self._anthropic_client = _anthropic_mod.Anthropic(api_key=self._api_key)
             print(f"LLM reconfigured: anthropic (model: {self._llm_model})")
         elif provider in ('openai',) and api_key:
