@@ -244,7 +244,6 @@ class DocSearcher:
                 resp = self._anthropic_client.messages.create(
                     model=self._llm_model, max_tokens=200,
                     messages=[{'role': 'user', 'content': prompt}],
-                    temperature=0.0
                 )
                 return resp.content[0].text
             elif self.llm_provider == 'ollama' and self.use_ollama:
@@ -480,7 +479,6 @@ Answer the question thoroughly with citations to the source documents."""
                 messages=[
                     {'role': 'user', 'content': user_prompt}
                 ],
-                temperature=0.3
             )
             return response.content[0].text
         except Exception as e:

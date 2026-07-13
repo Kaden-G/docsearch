@@ -157,7 +157,6 @@ class ToolBox:
             max_tokens=max_tokens,
             system=system_prompt,
             messages=[{"role": "user", "content": user_prompt}],
-            temperature=temperature,
         )
         text = resp.content[0].text if resp.content else ""
         pt = ct = 0
