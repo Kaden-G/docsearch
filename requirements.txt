@@ -2,7 +2,7 @@
 # Versions pinned for reproducibility.
 
 # Document extraction
-pypdf==6.13.3
+pypdf==6.15.0
 pdfminer.six==20231228
 python-docx==1.2.0
 
